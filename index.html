@@ -1,185 +1,1049 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Techtoc you're guide in tech - Home</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
+import React, { useState, useEffect, useMemo } from 'react';
+
+// To make this fully functional, you would need to install firebase:
+// npm install firebase
+// NOTE: It is highly recommended to use environment variables for Firebase config in a real project.
+// This example uses a placeholder configuration.
+import { initializeApp } from "firebase/app";
+import { 
+    getAuth, 
+    signInWithEmailAndPassword, 
+    signOut, 
+    onAuthStateChanged,
+    signInAnonymously,
+    signInWithCustomToken
+} from "firebase/auth";
+import { 
+    getFirestore, 
+    collection, 
+    addDoc, 
+    query, 
+    orderBy, 
+    onSnapshot,
+    serverTimestamp,
+    doc,
+    updateDoc,
+    deleteDoc,
+    where,
+    getDocs
+} from 'firebase/firestore';
+import { 
+    getStorage, 
+    ref, 
+    uploadBytes, 
+    getDownloadURL,
+    deleteObject
+} from "firebase/storage";
+
+
+// --- Firebase Configuration ---
+// IMPORTANT: Replace with your actual Firebase project configuration.
+// For production, use environment variables to keep your keys secure.
+const firebaseConfig = {
+  apiKey: "AIzaSyBu7l1Bebm-fPFuHqAs0u436duM1PF8tZA",
+  authDomain: "affiliates-319d9.firebaseapp.com",
+  projectId: "affiliates-319d9",
+  storageBucket: "affiliates-319d9.firebasestorage.app",
+  messagingSenderId: "717419634114",
+  appId: "1:717419634114:web:9e20e4c2888bed332a4a5b",
+  measurementId: "G-DPD6WRJF8R"
+};
+
+
+// --- Firebase Initialization ---
+// Initialize Firebase
+// The global variables __app_id, __firebase_config, and __initial_auth_token are assumed to be provided by the environment.
+// For local development, you can replace them with your actual config.
+const finalFirebaseConfig = typeof __firebase_config !== 'undefined'
+    ? JSON.parse(__firebase_config)
+    : firebaseConfig;
+
+const app = initializeApp(finalFirebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+
+// --- SVG Icons & Spinner ---
+const Icon = ({ path, className = 'w-5 h-5' }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path d={path} />
+    </svg>
+);
+
+const Spinner = ({ className = 'w-5 h-5' }) => (
+    <svg className={`animate-spin ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+);
+
+const Icons = {
+    edit: "M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.712zM19.513 8.199l-3.712-3.712-8.4 8.4a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32l8.4-8.4z",
+    trash: "M16.5 4.478v.227a48.816 48.816 0 013.878.512.75.75 0 11-.256 1.478l-.209-.035-1.005 13.006a3 3 0 01-2.991 2.77H8.084a3 3 0 01-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 01-.256-1.478A48.567 48.567 0 017.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 013.369 0c1.603.051 2.815 1.387 2.815 2.951zm-6.136-1.452a51.196 51.196 0 013.273 0g-3.273 0a51.196 51.196 0 00-3.273 0",
+    publish: "M12 16.5a4.5 4.5 0 100-9 4.5 4.5 0 000 9zM12 4.5C7.306 4.5 3.75 7.306 3.75 12c0 4.694 3.556 8.25 8.25 8.25s8.25-3.556 8.25-8.25C20.25 7.306 16.694 4.5 12 4.5z",
+    unpublish: "M3.53 2.47a.75.75 0 00-1.06 1.06l18 18a.75.75 0 101.06-1.06l-18-18zM12 15a3 3 0 100-6 3 3 0 000 6z",
+    feature: "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z",
+    draft: "M16.53 9.47a.75.75 0 00-1.06-1.06L12 11.94l-3.47-3.47a.75.75 0 00-1.06 1.06l3.47 3.47-3.47 3.47a.75.75 0 101.06 1.06L12 14.06l3.47 3.47a.75.75 0 101.06-1.06L13.06 12l3.47-2.53z",
+    box: "M2.25 7.125A2.25 2.25 0 014.5 4.875h15A2.25 2.25 0 0121.75 7.125v1.518a2.25 2.25 0 01-1.282 2.053l-2.872.957-2.872.957a2.25 2.25 0 01-2.434 0l-2.872-.957-2.872-.957A2.25 2.25 0 012.25 8.643V7.125zM12 15.638l2.872.957a2.25 2.25 0 002.434 0l2.872-.957a2.25 2.25 0 001.282-2.053v-1.518A2.25 2.25 0 0019.5 7.125h-15a2.25 2.25 0 00-2.25 2.25v1.518c0 .939.524 1.76 1.282 2.053l2.872.957 2.872.957a2.25 2.25 0 002.434 0zM12 21.375l2.872.957a2.25 2.25 0 002.434 0l2.872-.957a2.25 2.25 0 001.282-2.053v-1.518a2.25 2.25 0 00-2.25-2.25h-15a2.25 2.25 0 00-2.25 2.25v1.518c0 .939.524 1.76 1.282 2.053l2.872.957 2.872.957a2.25 2.25 0 002.434 0z",
+    book: "M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6-2.292m0 0v14.25",
+    cursor: "M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zm0 0l-3.182 3.182a1.5 1.5 0 01-2.121 0l-3.182-3.182a1.5 1.5 0 010-2.121l3.182-3.182a1.5 1.5 0 012.121 0l3.182 3.182a1.5 1.5 0 010 2.121z",
+    tag: "M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3zM11.25 10.875a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z"
+};
+
+// --- Helper Components & Hooks ---
+
+// Custom hook to manage SEO meta tags
+const useSeo = (title, description) => {
+    useEffect(() => {
+        if (title) { document.title = title; }
+        if (description) {
+            let metaDesc = document.querySelector('meta[name="description"]');
+            if (!metaDesc) {
+                metaDesc = document.createElement('meta');
+                metaDesc.setAttribute('name', 'description');
+                document.head.appendChild(metaDesc);
+            }
+            metaDesc.setAttribute('content', description);
         }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800">
+    }, [title, description]);
+};
 
-    <!-- Header -->
-    <header class="bg-white shadow-md sticky top-0 z-50">
-        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <a href="#" class="text-2xl font-bold text-slate-900">Techtoc! your guide in Tech</a>
-            <div class="hidden md:flex space-x-6">
-                <a href="#" class="text-slate-600 hover:text-indigo-600 transition duration-300">Home</a>
-                <a href="#" class="text-slate-600 hover:text-indigo-600 transition duration-300">Reviews</a>
-                <a href="#" class="text-slate-600 hover:text-indigo-600 transition duration-300">Guides</a>
-                <a href="#" class="text-slate-600 hover:text-indigo-600 transition duration-300">About</a>
+// A reusable Modal Dialog component
+const Modal = ({ isOpen, onClose, title, children, onConfirm, confirmText = 'Confirm', confirmClass = 'bg-red-600 hover:bg-red-700' }) => {
+    useEffect(() => {
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+        if (isOpen) {
+            document.addEventListener('keydown', handleEscape);
+        }
+        return () => document.removeEventListener('keydown', handleEscape);
+    }, [isOpen, onClose]);
+
+    if (!isOpen) return null;
+
+    return (
+        <div 
+            className="fixed inset-0 bg-black bg-opacity-60 z-50 flex justify-center items-center p-4 transition-opacity duration-300"
+            onClick={onClose}
+        >
+            <div 
+                className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all duration-300 scale-95 opacity-0 animate-fade-in-scale"
+                onClick={e => e.stopPropagation()}
+            >
+                <h3 className="text-lg font-bold text-slate-800 mb-4">{title}</h3>
+                <div className="text-slate-600 mb-6">{children}</div>
+                <div className="flex justify-end space-x-4">
+                    <button onClick={onClose} className="px-4 py-2 bg-slate-200 text-slate-800 rounded-lg hover:bg-slate-300 font-semibold">Cancel</button>
+                    <button onClick={onConfirm} className={`px-4 py-2 text-white rounded-lg font-semibold ${confirmClass}`}>
+                        {confirmText}
+                    </button>
+                </div>
             </div>
-            <button class="md:hidden" id="mobile-menu-button">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+        </div>
+    );
+};
+
+
+// Refined StarRating component
+const StarRating = ({ rating, setRating, size = 'w-5 h-5' }) => {
+    const stars = Array.from({ length: 5 }, (_, i) => i + 1);
+    return (
+        <div className="flex items-center">
+            {stars.map(star => (
+                <svg key={star} className={`${size} fill-current ${setRating ? 'cursor-pointer' : ''} ${star <= rating ? 'text-amber-400' : 'text-slate-300'}`} viewBox="0 0 20 20" onClick={() => setRating?.(star)}>
+                    <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
                 </svg>
+            ))}
+        </div>
+    );
+};
+
+// Function to handle affiliate clicks
+const handleAffiliateClick = async (product) => {
+    try {
+        await addDoc(collection(db, `/artifacts/${appId}/public/data/clicks`), { 
+            productId: product.id, 
+            productName: product.name, 
+            clickedAt: serverTimestamp() 
+        });
+    } catch (error) { console.error("Error logging click: ", error); }
+    window.open(product.affiliateLink, '_blank', 'noopener,noreferrer');
+};
+
+// Enhanced Product Card component
+const ProductCard = ({ product }) => (
+    <div className="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group">
+        <div className="relative">
+            <img 
+                src={product.imageUrl} 
+                alt={product.name} 
+                className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105" 
+                onError={(e) => { e.target.onerror = null; e.target.src=`https://placehold.co/600x400/e2e8f0/4a5568?text=Image+Not+Found`; }} 
+            />
+            {product.categoryName && (<span className="absolute top-3 left-3 bg-indigo-600 text-white text-xs font-semibold px-3 py-1 rounded-full">{product.categoryName}</span>)}
+        </div>
+        <div className="p-5 flex flex-col flex-grow">
+            <h3 className="text-lg font-bold text-slate-800 mb-2">{product.name}</h3>
+            <div className="text-slate-600 text-sm mb-4 flex-grow prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: product.description }} />
+            <div className="mb-4 flex flex-wrap gap-2">
+                {product.tags?.map(tag => <span key={tag} className="bg-slate-100 text-slate-700 text-xs font-medium px-2.5 py-1 rounded-full">{tag}</span>)}
+            </div>
+            <div className="flex items-center justify-between mb-4">
+                <StarRating rating={product.rating || 4} />
+                <span className="text-xl font-bold text-slate-800">{product.price}</span>
+            </div>
+            <button 
+                onClick={() => handleAffiliateClick(product)} 
+                className="w-full text-center bg-amber-400 hover:bg-amber-500 text-slate-800 font-bold py-2.5 px-4 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md"
+            >
+                Check Price
             </button>
-        </nav>
-        <!-- Mobile Menu -->
-        <div class="hidden md:hidden" id="mobile-menu">
-            <a href="#" class="block py-2 px-4 text-sm hover:bg-slate-100">Home</a>
-            <a href="#" class="block py-2 px-4 text-sm hover:bg-slate-100">Reviews</a>
-            <a href="#" class="block py-2 px-4 text-sm hover:bg-slate-100">Guides</a>
-            <a href="#" class="block py-2 px-4 text-sm hover:bg-slate-100">About</a>
         </div>
-    </header>
+    </div>
+);
 
-    <!-- Main Content -->
-    <main class="container mx-auto px-6 py-12">
-        
-        <!-- Hero Section -->
-        <section class="text-center mb-16">
-            <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-4">The Ultimate Resource for technology update and trends</h1>
-            <p class="text-lg text-slate-600 max-w-3xl mx-auto">Discover the best Tech products, in-depth reviews, and helpful guides in Tech.</p>
-        </section>
+// Enhanced Article Card component
+const ArticleCard = ({ article, navigate }) => (
+    <div className="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden cursor-pointer group" onClick={navigate('article', article)}>
+        <div className="overflow-hidden">
+            <img 
+                src={article.imageUrl} 
+                alt={article.title} 
+                className="w-full h-56 object-cover transition-transform duration-300 group-hover:scale-105" 
+                onError={(e) => { e.target.onerror = null; e.target.src=`https://placehold.co/600x400/e2e8f0/4a5568?text=Image+Not+Found`; }} 
+            />
+        </div>
+        <div className="p-6">
+            <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors duration-300">{article.title}</h3>
+            <p className="text-slate-500 text-sm">{new Date(article.createdAt?.toDate()).toLocaleDateString()}</p>
+        </div>
+    </div>
+);
 
-        
-        <!-- Featured Post / Main Article -->
-        <article class="bg-white p-6 md:p-8 rounded-xl shadow-lg mb-12">
-            <img src="iPhone17.png" alt="Featured article image" class="w-full h-auto object-cover rounded-lg mb-6">
-            <h2 class="text-3xl font-bold text-slate-900 mb-4">Is iPhone 17 really worth buying this 2025?</h2>
-            <p class="text-slate-600 mb-4">Welcome to the definitive guide if the new iPhone released is really worth releasing your penny out of your pocket. Whether you're a complete beginner in the world of iOS or looking to upgrade your current iPhone, we've got you covered. We'll walk you through the essentials, compare the top products on the market, and help you make the best choice for your needs and budget.</p>
-            <p class="text-slate-600 mb-6">In this post, we'll dive deep into the features, pros, and cons of the most popular options available today. Our goal is to save you time and ensure you get the best value for your money.</p>
+
+// --- Page Components ---
+
+const HomePage = ({ featuredProducts, featuredArticles }) => {
+    const featuredArticle = featuredArticles.length > 0 ? featuredArticles[0] : null;
+    const pageTitle = featuredArticle ? featuredArticle.metaTitle || featuredArticle.title : 'Vignette - Your Ultimate Guide to the Best';
+    const pageDesc = featuredArticle ? featuredArticle.metaDescription : 'We research, test, and review products so you can make confident buying decisions.';
+    useSeo(pageTitle, pageDesc);
+
+    return (
+        <main className="container mx-auto px-6 py-12">
+            {/* Centered main content area */}
+            <div className="max-w-4xl mx-auto">
+                {featuredArticle ? (
+                    <article className="mb-16">
+                       <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 mb-4 tracking-tight text-center">{featuredArticle.title}</h1>
+                        <p className="text-slate-500 mb-8 text-center">Published on {new Date(featuredArticle.createdAt?.toDate()).toLocaleDateString()}</p>
+                        <img src={featuredArticle.imageUrl} alt={featuredArticle.title} className="w-full h-auto rounded-lg shadow-lg mb-8" />
+                        <div className="prose lg:prose-xl max-w-none" dangerouslySetInnerHTML={{ __html: featuredArticle.content }} />
+                    </article>
+                ) : (
+                    <section className="text-center py-16 sm:py-20 mb-16">
+                        <h1 className="text-4xl md:text-6xl font-extrabold text-slate-800 mb-4 tracking-tighter">Your Ultimate Guide to the Best</h1>
+                        <p className="text-lg text-slate-600 max-w-3xl mx-auto">We research and review products so you can make confident buying decisions. We only recommend what we love.</p>
+                    </section>
+                )}
+            </div>
             
-            <!-- Featured Products Section -->
-            <div class="bg-slate-50 p-6 rounded-lg">
-                <h3 class="text-2xl font-bold mb-6 text-center">Top Picks for 2025</h3>
-                
-                <!-- Product 1: Best Overall -->
-                <div class="flex flex-col md:flex-row gap-6 items-center mb-8 border-b pb-8">
-                    <div class="md:w-1/3">
-                        <img src="https://placehold.co/400x400/93C5FD/1E293B?text=Product+Image+1" alt="Product 1 Image" class="rounded-lg shadow-md">
-                    </div>
-                    <div class="md:w-2/3">
-                        <span class="text-sm font-semibold text-indigo-600 bg-indigo-100 py-1 px-3 rounded-full">Best Overall</span>
-                        <h4 class="text-xl font-bold my-2">[Product Name 1]</h4>
-                        <p class="text-slate-600 mb-4">This is our top recommendation for most people. It offers an incredible balance of performance, features, and price. After weeks of testing, it consistently outperformed its competitors in key areas like [Benefit 1] and [Benefit 2].</p>
-                        <!-- IMPORTANT: Replace '#' with your actual Amazon affiliate link -->
-                        <a href="#" target="_blank" rel="noopener sponsored" class="inline-block bg-amber-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-600 transition-transform transform hover:scale-105">Check Price on Amazon</a>
-                    </div>
+            {/* Product recommendations underneath the main content */}
+            <section>
+                <h2 className="text-3xl font-bold text-slate-800 mb-8 border-l-4 border-indigo-500 pl-4">Top Recommendations</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {featuredProducts.slice(0, 5).map(product => (<ProductCard key={product.id} product={product} />))}
+                    {featuredProducts.length === 0 && <p className="text-slate-500">No recommended products available.</p>}
                 </div>
+            </section>
+        </main>
+    );
+};
 
-                <!-- Product 2: Best Budget Option -->
-                <div class="flex flex-col md:flex-row gap-6 items-center">
-                    <div class="md:w-1/3">
-                        <img src="https://placehold.co/400x400/A5B4FC/1E293B?text=Product+Image+2" alt="Product 2 Image" class="rounded-lg shadow-md">
-                    </div>
-                    <div class="md:w-2/3">
-                        <span class="text-sm font-semibold text-teal-600 bg-teal-100 py-1 px-3 rounded-full">Best Budget Pick</span>
-                        <h4 class="text-xl font-bold my-2">[Product Name 2]</h4>
-                        <p class="text-slate-600 mb-4">If you're on a tighter budget but still want excellent quality, look no further. This product delivers performance that punches way above its weight class, making it a fantastic value for anyone just starting out.</p>
-                        <!-- IMPORTANT: Replace '#' with your actual Amazon affiliate link -->
-                        <a href="#" target="_blank" rel="noopener sponsored" class="inline-block bg-amber-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-amber-600 transition-transform transform hover:scale-105">Check Price on Amazon</a>
-                    </div>
-                </div>
-            </div>
-        </article>
+const AllProductsPage = ({ products, title = "All Products" }) => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState('createdAt-desc');
+    
+    const filteredAndSortedProducts = useMemo(() => {
+        let filtered = products.filter(p => 
+            p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            p.description.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            (p.tags && p.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())))
+        );
         
-        <!-- More Blog Posts Section -->
-        <section>
-            <h2 class="text-3xl font-bold text-center mb-8">Latest Articles</h2>
-            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <!-- Blog Post Card 1 -->
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col">
-                    <img src="https://placehold.co/600x400/60A5FA/FFFFFF?text=Article+1" alt="Blog post image" class="w-full h-48 object-cover">
-                    <div class="p-6 flex flex-col flex-grow">
-                        <h3 class="text-xl font-bold mb-2">Review: [Product Name 3] - Is It Worth The Hype?</h3>
-                        <p class="text-slate-600 mb-4 flex-grow">A deep-dive into one of the most popular products this year. We test every feature and give you our honest opinion.</p>
-                        <a href="#" class="text-indigo-600 font-semibold hover:underline mt-auto">Read More &rarr;</a>
-                    </div>
+        const [sortField, sortDirection] = sortBy.split('-');
+        
+        filtered.sort((a, b) => {
+            let valA, valB;
+            if (sortField === 'price') {
+                valA = parseFloat(a.price.replace(/[^0-9.-]+/g,""));
+                valB = parseFloat(b.price.replace(/[^0-9.-]+/g,""));
+            } else if (sortField === 'createdAt') {
+                valA = a.createdAt?.toDate() || 0;
+                valB = b.createdAt?.toDate() || 0;
+            }
+            else {
+                valA = a[sortField];
+                valB = b[sortField];
+            }
+
+            if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+            if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        return filtered;
+    }, [products, searchTerm, sortBy]);
+    
+    useSeo(`${title} - Vignette`, `Browse and filter through all our recommended products in the ${title} category.`);
+
+    return (
+        <main className="container mx-auto px-6 py-12">
+            <h1 className="text-4xl font-extrabold text-slate-800 mb-8 tracking-tight">{title}</h1>
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-8 flex flex-col md:flex-row gap-4 items-center">
+                <div className="w-full md:w-2/3">
+                    <input type="text" placeholder="Search by name, description, or tag..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
                 </div>
-                <!-- Blog Post Card 2 -->
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col">
-                    <img src="https://placehold.co/600x400/34D399/FFFFFF?text=Article+2" alt="Blog post image" class="w-full h-48 object-cover">
-                    <div class="p-6 flex flex-col flex-grow">
-                        <h3 class="text-xl font-bold mb-2">[Number] Common Mistakes to Avoid When [Activity in Niche]</h3>
-                        <p class="text-slate-600 mb-4 flex-grow">Save yourself time and money by learning from these common pitfalls that many beginners fall into.</p>
-                        <a href="#" class="text-indigo-600 font-semibold hover:underline mt-auto">Read More &rarr;</a>
-                    </div>
-                </div>
-                <!-- Blog Post Card 3 -->
-                <div class="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col">
-                    <img src="https://placehold.co/600x400/F87171/FFFFFF?text=Article+3" alt="Blog post image" class="w-full h-48 object-cover">
-                    <div class="p-6 flex flex-col flex-grow">
-                        <h3 class="text-xl font-bold mb-2">[Product A] vs. [Product B]: Which One Should You Buy?</h3>
-                        <p class="text-slate-600 mb-4 flex-grow">We put two heavyweights head-to-head in a detailed comparison to help you decide which is right for you.</p>
-                        <a href="#" class="text-indigo-600 font-semibold hover:underline mt-auto">Read More &rarr;</a>
-                    </div>
+                <div className="w-full md:w-1/3">
+                    <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                        <option value="createdAt-desc">Newest First</option>
+                        <option value="price-asc">Price: Low to High</option>
+                        <option value="price-desc">Price: High to Low</option>
+                        <option value="name-asc">Name: A-Z</option>
+                    </select>
                 </div>
             </div>
-        </section>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {filteredAndSortedProducts.map(product => <ProductCard key={product.id} product={product} />)}
+                {filteredAndSortedProducts.length === 0 && <p className="text-slate-500 col-span-full text-center py-10">No products match your criteria.</p>}
+            </div>
+        </main>
+    );
+};
 
-        <!-- Newsletter Subscription Section -->
-        <section class="bg-indigo-600 text-white rounded-xl shadow-lg my-16 py-12 px-6">
-            <div class="max-w-2xl mx-auto text-center">
-                <h2 class="text-3xl font-bold mb-4">Join Our Techtoc Community</h2>
-                <p class="mb-8">Subscribe to our newsletter to get the latest update, guides, and deals sent straight to your inbox. No spam, ever.</p>
-                <form id="newsletter-form" class="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto">
-                    <input type="email" id="email-input" placeholder="Enter your email address" required class="w-full px-4 py-3 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400" aria-label="Email Address">
-                    <button type="submit" class="bg-amber-500 text-slate-900 font-bold py-3 px-6 rounded-lg hover:bg-amber-400 transition-transform transform hover:scale-105">Subscribe</button>
+const BlogPage = ({ articles, navigate }) => {
+    useSeo('Blog - Vignette', 'Read our latest articles, reviews, and guides to find the best products.');
+    return (
+        <main className="container mx-auto px-6 py-12">
+            <h1 className="text-4xl font-extrabold text-slate-800 mb-8 tracking-tight">Our Latest Articles</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {articles.map(article => <ArticleCard key={article.id} article={article} navigate={navigate} />)}
+                {articles.length === 0 && <p className="text-slate-500 col-span-full text-center py-10">No articles published yet.</p>}
+            </div>
+        </main>
+    );
+};
+
+const CommentsSection = ({ itemId }) => {
+    const [comments, setComments] = useState([]);
+    const [name, setName] = useState('');
+    const [text, setText] = useState('');
+    const [rating, setRating] = useState(5);
+    const [message, setMessage] = useState('');
+
+    useEffect(() => {
+        const q = query(collection(db, `/artifacts/${appId}/public/data/comments`), where('itemId', '==', itemId), orderBy('createdAt', 'desc'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setComments(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        });
+        return unsubscribe;
+    }, [itemId]);
+
+    const handleSubmitComment = async (e) => {
+        e.preventDefault();
+        if (!name.trim() || !text.trim()) {
+            setMessage('Please fill out all fields.');
+            return;
+        }
+        setMessage('Submitting...');
+        try {
+            await addDoc(collection(db, `/artifacts/${appId}/public/data/comments`), { itemId, name, text, rating, createdAt: serverTimestamp() });
+            setName('');
+            setText('');
+            setRating(5);
+            setMessage('Comment submitted!');
+            setTimeout(() => setMessage(''), 3000);
+        } catch (error) {
+            console.error("Error adding comment: ", error);
+            setMessage('Failed to submit comment.');
+        }
+    };
+
+    return (
+        <section className="mt-16">
+            <h2 className="text-3xl font-bold text-slate-800 mb-8">Comments ({comments.length})</h2>
+            <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 mb-8">
+                <h3 className="text-xl font-bold mb-4">Leave a Reply</h3>
+                <form onSubmit={handleSubmitComment} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="text" placeholder="Your Name" value={name} onChange={e => setName(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg" required />
+                        <div className="flex items-center space-x-2"><span className="font-medium text-slate-700">Your Rating:</span> <StarRating rating={rating} setRating={setRating} /></div>
+                    </div>
+                    <textarea placeholder="Your Comment" value={text} onChange={e => setText(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg" rows="4" required />
+                    <button type="submit" className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors">Submit</button>
+                    {message && <p className="mt-2 text-sm">{message}</p>}
                 </form>
-                <p id="success-message" class="mt-4 text-green-300 hidden">✅ Thanks for subscribing! Please check your inbox.</p>
+            </div>
+            <div className="space-y-6">
+                {comments.map(comment => (
+                    <div key={comment.id} className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-slate-200">
+                        <div className="flex items-center justify-between mb-2">
+                            <h4 className="font-bold text-lg">{comment.name}</h4>
+                            <StarRating rating={comment.rating} />
+                        </div>
+                        <p className="text-slate-500 text-sm mb-3">{new Date(comment.createdAt?.toDate()).toLocaleString()}</p>
+                        <p className="text-slate-700">{comment.text}</p>
+                    </div>
+                ))}
+                {comments.length === 0 && <p className="text-slate-500 text-center py-6">No comments yet. Be the first to reply!</p>}
             </div>
         </section>
+    );
+};
 
-    </main>
+const ArticlePage = ({ article }) => {
+    if (!article) return <div className="container mx-auto px-6 py-12 text-center text-slate-500">Article not found.</div>;
+    useSeo(article.metaTitle || article.title, article.metaDescription || '');
+    return (
+        <main className="container mx-auto px-6 py-12 max-w-4xl">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 mb-4 tracking-tight">{article.title}</h1>
+            <p className="text-slate-500 mb-8">Published on {new Date(article.createdAt?.toDate()).toLocaleDateString()}</p>
+            <img src={article.imageUrl} alt={article.title} className="w-full h-auto rounded-xl shadow-lg mb-8" />
+            <div className="prose lg:prose-xl max-w-none mb-12" dangerouslySetInnerHTML={{ __html: article.content }} />
+            <CommentsSection itemId={article.id} />
+        </main>
+    );
+};
 
-    <!-- Footer -->
-    <footer class="bg-slate-800 text-white mt-16">
-        <div class="container mx-auto px-6 py-8 text-center">
-            <p>&copy; 2025 Techtoc. All Rights Reserved.</p>
-            <p class="text-sm text-slate-400 mt-2"> Techtoc is your ultimate guide in Tech</p>
+
+const LoginPage = () => {
+    const [email, setEmail] = useState(''); 
+    const [password, setPassword] = useState(''); 
+    const [error, setError] = useState(''); 
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleLogin = async (e) => { 
+        e.preventDefault(); 
+        setError(''); 
+        setIsLoading(true);
+        try { 
+            await signInWithEmailAndPassword(auth, email, password); 
+        } catch (err) { 
+            setError('Failed to login. Please check your credentials.'); 
+            console.error(err); 
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-slate-100">
+            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg border border-slate-200">
+                <h2 className="text-2xl font-bold text-center text-slate-800">Admin Login</h2>
+                <form onSubmit={handleLogin} className="space-y-6">
+                    <div>
+                        <label className="text-sm font-bold text-slate-600 block mb-1">Email</label>
+                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-2.5 border border-slate-300 rounded-lg" required />
+                    </div>
+                    <div>
+                        <label className="text-sm font-bold text-slate-600 block mb-1">Password</label>
+                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-2.5 border border-slate-300 rounded-lg" required />
+                    </div>
+                    {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+                    <button 
+                        type="submit" 
+                        disabled={isLoading}
+                        className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition-colors flex items-center justify-center disabled:bg-indigo-400"
+                    >
+                        {isLoading ? <Spinner /> : 'Login'}
+                    </button>
+                </form>
+            </div>
         </div>
-    </footer>
+    );
+};
 
-    <script>
-        // Mobile menu toggle
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
-        const mobileMenu = document.getElementById('mobile-menu');
+const StatCard = ({ title, value, icon }) => (<div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex items-center"><div className="bg-indigo-100 text-indigo-600 p-3 rounded-full mr-4">{icon}</div><div><p className="text-sm text-slate-500">{title}</p><p className="text-2xl font-bold text-slate-800">{value}</p></div></div>);
 
-        mobileMenuButton.addEventListener('click', () => {
-            mobileMenu.classList.toggle('hidden');
+// --- Admin Dashboard Components ---
+const AdminSection = ({ title, children }) => (
+    <div className="bg-white p-6 sm:p-8 rounded-xl shadow-sm border border-slate-200">
+        <h2 className="text-2xl font-bold text-slate-800 mb-6">{title}</h2>
+        {children}
+    </div>
+);
+
+const ProductManager = ({ allProducts, clicks, handleEditClick, handleTogglePublish, handleToggleFeature, handleDeleteProduct }) => (
+    <AdminSection title="Manage Products">
+        <div className="space-y-2 max-h-[42rem] overflow-y-auto pr-2 -mr-2">
+            {allProducts.map(p => {
+                const productClicks = clicks.filter(c => c.productId === p.id).length;
+                return (
+                    <div key={p.id} className="flex items-center justify-between p-3 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition-colors">
+                        <div className="flex items-center min-w-0">
+                            <span className={`flex-shrink-0 w-2 h-2 rounded-full mr-3 ${p.isDraft ? 'bg-slate-400' : 'bg-green-500'}`} title={p.isDraft ? 'Draft' : 'Published'}></span>
+                            {p.isFeatured && <Icon path={Icons.feature} className="w-4 h-4 text-amber-500 mr-2 flex-shrink-0" />}
+                            <span className="font-semibold truncate mr-2" title={p.name}>{p.name}</span>
+                            <span className="text-indigo-600 font-medium text-xs">({productClicks} Clicks)</span>
+                        </div>
+                        <div className="flex items-center space-x-1.5 flex-shrink-0 ml-2">
+                            <button onClick={() => handleEditClick('product', p)} className="p-1.5 text-slate-500 rounded hover:bg-blue-100 hover:text-blue-600"><Icon path={Icons.edit} /></button>
+                            <button onClick={() => handleTogglePublish('product', p)} className={`p-1.5 rounded ${p.isDraft ? 'text-slate-500 hover:bg-green-100 hover:text-green-600' : 'text-slate-500 hover:bg-slate-200'}`} title={p.isDraft ? 'Publish' : 'Unpublish'}><Icon path={p.isDraft ? Icons.publish : Icons.unpublish} /></button>
+                            <button onClick={() => handleToggleFeature('product', p)} disabled={p.isDraft} className="p-1.5 text-slate-500 rounded disabled:opacity-40 disabled:cursor-not-allowed hover:bg-purple-100 hover:text-purple-600"><Icon path={Icons.feature} /></button>
+                            <button onClick={() => handleDeleteProduct('product', p)} className="p-1.5 text-slate-500 rounded hover:bg-red-100 hover:text-red-600"><Icon path={Icons.trash} /></button>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    </AdminSection>
+);
+
+const ArticleManager = ({ allArticles, handleEditClick, handleTogglePublish, handleToggleFeature, handleDeleteArticle }) => (
+    <AdminSection title="Manage Articles">
+        <div className="space-y-2 max-h-[42rem] overflow-y-auto pr-2 -mr-2">
+            {allArticles.map(a => (
+                <div key={a.id} className="flex items-center justify-between p-3 border border-slate-200 rounded-lg text-sm hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center min-w-0">
+                        <span className={`flex-shrink-0 w-2 h-2 rounded-full mr-3 ${a.isDraft ? 'bg-slate-400' : 'bg-green-500'}`} title={a.isDraft ? 'Draft' : 'Published'}></span>
+                        {a.isFeatured && <Icon path={Icons.feature} className="w-4 h-4 text-amber-500 mr-2 flex-shrink-0" />}
+                        <span className="font-semibold truncate" title={a.title}>{a.title}</span>
+                    </div>
+                    <div className="flex items-center space-x-1.5 flex-shrink-0 ml-2">
+                        <button onClick={() => handleEditClick('article', a)} className="p-1.5 text-slate-500 rounded hover:bg-blue-100 hover:text-blue-600"><Icon path={Icons.edit} /></button>
+                        <button onClick={() => handleTogglePublish('article', a)} className={`p-1.5 rounded ${a.isDraft ? 'text-slate-500 hover:bg-green-100 hover:text-green-600' : 'text-slate-500 hover:bg-slate-200'}`} title={a.isDraft ? 'Publish' : 'Unpublish'}><Icon path={a.isDraft ? Icons.publish : Icons.unpublish} /></button>
+                        <button onClick={() => handleToggleFeature('article', a)} disabled={a.isDraft} className="p-1.5 text-slate-500 rounded disabled:opacity-40 disabled:cursor-not-allowed hover:bg-purple-100 hover:text-purple-600"><Icon path={Icons.feature} /></button>
+                        <button onClick={() => handleDeleteArticle('article', a)} className="p-1.5 text-slate-500 rounded hover:bg-red-100 hover:text-red-600"><Icon path={Icons.trash} /></button>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </AdminSection>
+);
+
+const CategoryTagManager = ({ items, type, handleAddItem, handleDeleteItem }) => {
+    const [name, setName] = useState('');
+    const title = type.charAt(0).toUpperCase() + type.slice(1);
+    const handleAdd = () => { handleAddItem(type, name); setName(''); };
+    return (
+        <AdminSection title={`Manage ${title}`}>
+            <div className="flex gap-2 mb-4">
+                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder={`New ${type.slice(0,-1)}`} className="w-full p-2 border border-slate-300 rounded-lg" />
+                <button onClick={handleAdd} className="px-4 py-2 bg-green-500 text-white font-semibold rounded-lg hover:bg-green-600">Add</button>
+            </div>
+            <div className={type === 'tags' ? "flex flex-wrap gap-2" : "space-y-2 max-h-40 overflow-y-auto pr-1"}>
+                {items.map(item => (
+                    <div key={item.id} className={`flex items-center ${type === 'tags' ? 'bg-slate-200 rounded-full px-3 py-1 text-sm' : 'p-2 border border-slate-200 rounded-lg justify-between'}`}>
+                        <span className={type === 'tags' ? 'mr-2' : 'truncate'}>{item.name}</span>
+                        <button onClick={() => handleDeleteItem(type, item)} className="text-slate-400 hover:text-red-500"><Icon path={Icons.draft} className="w-4 h-4"/></button>
+                    </div>
+                ))}
+            </div>
+        </AdminSection>
+    );
+};
+
+const AdminDashboard = ({ allProducts, allArticles, categories, tags, clicks }) => {
+    const [activeTab, setActiveTab] = useState('products');
+    const [formState, setFormState] = useState({});
+    const [image, setImage] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [message, setMessage] = useState('');
+    const [editingItem, setEditingItem] = useState(null);
+    const [modalConfig, setModalConfig] = useState({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+    const handleFormChange = (e) => { const { name, value, type, checked } = e.target; setFormState(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value })); };
+    const handleImageChange = (e) => { if (e.target.files[0]) setImage(e.target.files[0]); };
+    const resetForm = () => { setFormState({}); setImage(null); setEditingItem(null); };
+
+    const handleEditClick = (type, item) => { setEditingItem({ type, ...item }); setFormState({ ...item, tags: item.tags ? item.tags.join(', ') : '' }); setActiveTab(type === 'product' ? 'products' : 'articles'); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+    const handleCancelEdit = () => { resetForm(); };
+
+    const showConfirmationModal = (title, message, confirmAction) => {
+        setModalConfig({
+            isOpen: true,
+            title,
+            message,
+            onConfirm: () => {
+                confirmAction();
+                setModalConfig({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+            }
+        });
+    };
+    const handleCloseModal = () => setModalConfig({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const type = editingItem ? editingItem.type : (activeTab === 'products' ? 'product' : 'article');
+        setUploading(true);
+        setMessage('Saving...');
+        try {
+            let imageUrl = editingItem?.imageUrl || '', imagePath = editingItem?.imagePath || '';
+            if (image) {
+                if (imagePath) await deleteObject(ref(storage, imagePath)).catch(console.error);
+                const newImageRef = ref(storage, `${type}s/${Date.now()}_${image.name}`);
+                const snapshot = await uploadBytes(newImageRef, image);
+                imageUrl = await getDownloadURL(snapshot.ref);
+                imagePath = snapshot.ref.fullPath;
+            }
+            const data = { ...formState, imageUrl, imagePath, tags: formState.tags ? formState.tags.split(',').map(t => t.trim()).filter(Boolean) : [] };
+            if (type === 'product') data.categoryName = categories.find(c => c.id === data.categoryId)?.name || '';
+            if (editingItem) {
+                await updateDoc(doc(db, `/artifacts/${appId}/public/data/${type}s`, editingItem.id), data);
+            } else {
+                await addDoc(collection(db, `/artifacts/${appId}/public/data/${type}s`), { ...data, createdAt: serverTimestamp() });
+            }
+            setMessage('Saved successfully!');
+            setTimeout(() => { setMessage(''); resetForm(); }, 2000);
+        } catch (error) {
+            console.error(error);
+            setMessage('Failed to save. Check console for details.');
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleTogglePublish = async (type, item) => await updateDoc(doc(db, `/artifacts/${appId}/public/data/${type}s`, item.id), { isDraft: !item.isDraft });
+    const handleToggleFeature = async (type, item) => await updateDoc(doc(db, `/artifacts/${appId}/public/data/${type}s`, item.id), { isFeatured: !item.isFeatured });
+    
+    const handleDeleteItem = (type, item) => {
+        showConfirmationModal(
+            `Delete ${type}`,
+            `Are you sure you want to delete "${item.name || item.title}"? This action cannot be undone.`,
+            async () => {
+                try {
+                    await deleteDoc(doc(db, `/artifacts/${appId}/public/data/${type}s`, item.id));
+                    if (item.imagePath) await deleteObject(ref(storage, item.imagePath));
+                } catch (error) { console.error("Deletion failed: ", error); }
+            }
+        );
+    };
+
+    const handleAddCategoryTag = async (type, name) => { if (!name.trim()) return; await addDoc(collection(db, `/artifacts/${appId}/public/data/${type}`), { name: name.trim() }); };
+    
+    const handleDeleteCategoryTag = (type, item) => {
+        showConfirmationModal(
+            `Delete ${type.slice(0,-1)}`,
+            `Are you sure you want to delete "${item.name}"?`,
+            async () => {
+                await deleteDoc(doc(db, `/artifacts/${appId}/public/data/${type}`, item.id));
+            }
+        );
+    };
+
+    const renderForm = () => {
+        const type = editingItem ? editingItem.type : (activeTab === 'products' ? 'product' : 'article');
+        const commonInputClass = "w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition";
+        
+        if (type === 'product') {
+            return (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input name="name" placeholder="Product Name" value={formState.name || ''} onChange={handleFormChange} className={commonInputClass} required />
+                        <input name="price" placeholder="Price (e.g., $99.99)" value={formState.price || ''} onChange={handleFormChange} className={commonInputClass} required />
+                        <select name="categoryId" value={formState.categoryId || ''} onChange={handleFormChange} className={commonInputClass} required><option value="">Select a Category</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+                        <input name="rating" type="number" min="1" max="5" placeholder="Rating (1-5)" value={formState.rating || ''} onChange={handleFormChange} className={commonInputClass} required />
+                    </div>
+                    <textarea name="description" placeholder="Description (supports HTML)" value={formState.description || ''} onChange={handleFormChange} className={`${commonInputClass} font-mono`} rows="6" required />
+                    <input name="tags" placeholder="Tags (comma-separated)" value={formState.tags || ''} onChange={handleFormChange} className={commonInputClass} />
+                    <input name="affiliateLink" type="url" placeholder="Amazon Affiliate Link" value={formState.affiliateLink || ''} onChange={handleFormChange} className={commonInputClass} required />
+                    
+                    <fieldset className="border-t border-slate-200 pt-6 space-y-4">
+                        <legend className="text-base font-semibold text-slate-700 -translate-y-6 bg-white px-2">SEO Fields</legend>
+                        <input name="slug" placeholder="URL Slug (e.g. my-product-name)" value={formState.slug || ''} onChange={handleFormChange} className={commonInputClass} />
+                        <input name="metaTitle" placeholder="Meta Title" value={formState.metaTitle || ''} onChange={handleFormChange} className={commonInputClass} />
+                        <textarea name="metaDescription" placeholder="Meta Description" value={formState.metaDescription || ''} onChange={handleFormChange} className={commonInputClass} rows="2" />
+                    </fieldset>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700">Product Image {editingItem && "(Leave blank to keep existing)"}</label>
+                        <input type="file" onChange={handleImageChange} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 mt-1" required={!editingItem} />
+                    </div>
+                    <div className="flex items-center space-x-6">
+                        <div className="flex items-center"><input name="isFeatured" type="checkbox" checked={formState.isFeatured || false} onChange={handleFormChange} className="h-4 w-4 rounded" /><label className="ml-2 text-slate-700">Feature on Homepage</label></div>
+                        <div className="flex items-center"><input name="isDraft" type="checkbox" checked={formState.isDraft || false} onChange={handleFormChange} className="h-4 w-4 rounded" /><label className="ml-2 text-slate-700">Save as Draft</label></div>
+                    </div>
+                    <div className="flex items-center space-x-4 pt-4 border-t border-slate-200">
+                        <button type="submit" disabled={uploading} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg disabled:bg-slate-400 transition-colors flex justify-center">
+                            {uploading ? <Spinner /> : (editingItem ? 'Update Product' : 'Add Product')}
+                        </button>
+                        {editingItem && <button type="button" onClick={handleCancelEdit} className="w-full py-2.5 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-lg transition-colors">Cancel</button>}
+                    </div>
+                    {message && <p className="text-center mt-4 text-sm font-medium">{message}</p>}
+                </form>
+            );
+        }
+        if (type === 'article') {
+            return (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <input name="title" placeholder="Article Title" value={formState.title || ''} onChange={handleFormChange} className={commonInputClass} required />
+                    <textarea name="content" placeholder="Article Content (supports HTML)" value={formState.content || ''} onChange={handleFormChange} className={`${commonInputClass} font-mono`} rows="10" required />
+                    <fieldset className="border-t border-slate-200 pt-6 space-y-4">
+                        <legend className="text-base font-semibold text-slate-700 -translate-y-6 bg-white px-2">SEO Fields</legend>
+                        <input name="slug" placeholder="URL Slug (e.g. my-article-title)" value={formState.slug || ''} onChange={handleFormChange} className={commonInputClass} />
+                        <input name="metaTitle" placeholder="Meta Title" value={formState.metaTitle || ''} onChange={handleFormChange} className={commonInputClass} />
+                        <textarea name="metaDescription" placeholder="Meta Description" value={formState.metaDescription || ''} onChange={handleFormChange} className={commonInputClass} rows="2" />
+                    </fieldset>
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700">Featured Image {editingItem && "(Leave blank to keep existing)"}</label>
+                        <input type="file" onChange={handleImageChange} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 mt-1" required={!editingItem} />
+                    </div>
+                    <div className="flex items-center space-x-6">
+                        <div className="flex items-center"><input name="isFeatured" type="checkbox" checked={formState.isFeatured || false} onChange={handleFormChange} className="h-4 w-4 rounded" /><label className="ml-2 text-slate-700">Feature on Homepage</label></div>
+                        <div className="flex items-center"><input name="isDraft" type="checkbox" checked={formState.isDraft || false} onChange={handleFormChange} className="h-4 w-4 rounded" /><label className="ml-2 text-slate-700">Save as Draft</label></div>
+                    </div>
+                    <div className="flex items-center space-x-4 pt-4 border-t border-slate-200">
+                        <button type="submit" disabled={uploading} className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg disabled:bg-slate-400 transition-colors flex justify-center">
+                             {uploading ? <Spinner /> : (editingItem ? 'Update Article' : 'Add Article')}
+                        </button>
+                        {editingItem && <button type="button" onClick={handleCancelEdit} className="w-full py-2.5 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-lg transition-colors">Cancel</button>}
+                    </div>
+                    {message && <p className="text-center mt-4 text-sm font-medium">{message}</p>}
+                </form>
+            );
+        }
+    };
+    
+    return (
+        <div className="container mx-auto px-6 py-12">
+            <Modal
+                isOpen={modalConfig.isOpen}
+                onClose={handleCloseModal}
+                title={modalConfig.title}
+                onConfirm={modalConfig.onConfirm}
+            >
+                <p>{modalConfig.message}</p>
+            </Modal>
+
+            <h1 className="text-3xl font-bold text-slate-800 mb-6">Admin Dashboard</h1>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <StatCard title="Published Products" value={allProducts.filter(p => !p.isDraft).length} icon={<Icon path={Icons.box} />} />
+                <StatCard title="Published Articles" value={allArticles.filter(a => !a.isDraft).length} icon={<Icon path={Icons.book} />} />
+                <StatCard title="Total Clicks" value={clicks.length} icon={<Icon path={Icons.cursor} />} />
+                <StatCard title="Categories" value={categories.length} icon={<Icon path={Icons.tag} />} />
+            </div>
+            <div className="border-b border-slate-200 mb-8">
+                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                    <button onClick={() => setActiveTab('products')} className={`${activeTab === 'products' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}>Products</button>
+                    <button onClick={() => setActiveTab('articles')} className={`${activeTab === 'articles' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}>Articles</button>
+                    <button onClick={() => setActiveTab('taxonomy')} className={`${activeTab === 'taxonomy' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors`}>Categories & Tags</button>
+                </nav>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
+                <div className="lg:col-span-3">
+                    <AdminSection title={editingItem ? `Edit ${editingItem.type.charAt(0).toUpperCase() + editingItem.type.slice(1)}` : `Add New ${activeTab === 'products' ? 'Product' : 'Article'}`}>
+                        {renderForm()}
+                    </AdminSection>
+                </div>
+                <div className="lg:col-span-2">
+                    {activeTab === 'products' && <ProductManager allProducts={allProducts} clicks={clicks} handleEditClick={handleEditClick} handleTogglePublish={handleTogglePublish} handleToggleFeature={handleToggleFeature} handleDeleteProduct={handleDeleteItem} />}
+                    {activeTab === 'articles' && <ArticleManager allArticles={allArticles} handleEditClick={handleEditClick} handleTogglePublish={handleTogglePublish} handleToggleFeature={handleToggleFeature} handleDeleteArticle={handleDeleteItem} />}
+                    {activeTab === 'taxonomy' && (<div className="space-y-8"><CategoryTagManager items={categories} type="categories" handleAddItem={handleAddCategoryTag} handleDeleteItem={handleDeleteCategoryTag} /><CategoryTagManager items={tags} type="tags" handleAddItem={handleAddCategoryTag} handleDeleteItem={handleDeleteCategoryTag} /></div>)}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const NewsletterSignup = () => {
+    const [email, setEmail] = useState('');
+    const [message, setMessage] = useState('');
+    const [isSubscribing, setIsSubscribing] = useState(false);
+
+    const handleSignup = async (e) => {
+        e.preventDefault();
+        if (!email) {
+            setMessage('Please enter a valid email.');
+            return;
+        }
+        setIsSubscribing(true);
+        setMessage('Subscribing...');
+        try {
+            await addDoc(collection(db, `/artifacts/${appId}/public/data/newsletterSignups`), { email, subscribedAt: serverTimestamp() });
+            setEmail('');
+            setMessage('Thank you for subscribing!');
+        } catch (error) {
+            console.error("Error signing up for newsletter: ", error);
+            setMessage('Subscription failed. Please try again.');
+        } finally {
+            setIsSubscribing(false);
+        }
+    };
+
+    return (
+        <div className="w-full max-w-md">
+            <p className="font-bold text-lg mb-2 text-slate-800">Stay Updated</p>
+            <p className="text-slate-600 mb-4">Get the latest product reviews and guides straight to your inbox.</p>
+            <form onSubmit={handleSignup} className="flex flex-col sm:flex-row gap-2">
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required />
+                <button type="submit" disabled={isSubscribing} className="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center disabled:bg-indigo-400">
+                    {isSubscribing ? <Spinner /> : 'Subscribe'}
+                </button>
+            </form>
+            {message && <p className="mt-2 text-sm text-center sm:text-left">{message}</p>}
+        </div>
+    );
+};
+
+
+// --- Site Layout Component ---
+const SiteLayout = ({ children, page, user, categories, navigate, handleLogout, isMenuOpen, setIsMenuOpen }) => {
+
+    useEffect(() => {
+        if (isMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        }
+    }, [isMenuOpen]);
+
+    return (
+        <div className="bg-slate-50 min-h-screen font-sans text-slate-700 flex flex-col">
+            <header className="bg-white/80 backdrop-blur-lg shadow-sm sticky top-0 z-20 border-b border-slate-200">
+                <div className="container mx-auto px-6">
+                    <div className="flex items-center justify-between h-16">
+                        <div className="flex-shrink-0">
+                            <a href="#" onClick={navigate('home')} className="text-2xl font-bold text-slate-800 flex items-center">
+                                <img src="vignettelogo.jpeg" alt="Vignette Logo" className="h-8 w-8 mr-2 rounded-full object-cover" />
+                                <div>
+                                    <span className="text-indigo-600">Vignette</span>
+                                </div>
+                            </a>
+                        </div>
+                        <div className="flex items-center">
+                            <div className="hidden lg:flex lg:items-center lg:space-x-6 font-medium">
+                                <a href="#" className="text-slate-600 hover:text-indigo-600 transition-colors" onClick={navigate('home')}>Home</a>
+                                <a href="#" className="text-slate-600 hover:text-indigo-600 transition-colors" onClick={navigate('all-products')}>All Products</a>
+                                <a href="#" className="text-slate-600 hover:text-indigo-600 transition-colors" onClick={navigate('blog')}>All Articles</a>
+                                <div className="relative group">
+                                    <button className="text-slate-600 hover:text-indigo-600 transition-colors">Categories</button>
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 hidden group-hover:block ring-1 ring-slate-900/5">
+                                        {categories.map(cat => (<a key={cat.id} href="#" onClick={navigate('category', cat)} className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">{cat.name}</a>))}
+                                        {categories.length === 0 && <span className="block px-4 py-2 text-sm text-slate-500">No categories</span>}
+                                    </div>
+                                </div>
+                                {user && !user.isAnonymous ? (<><a href="#" className="text-slate-600 hover:text-indigo-600 transition-colors" onClick={navigate('dashboard')}>Dashboard</a><button onClick={handleLogout} className="text-slate-600 hover:text-indigo-600 transition-colors">Logout</button></>) : <a href="#" className="text-slate-600 hover:text-indigo-600 transition-colors" onClick={navigate('login')}>Login</a>}
+                            </div>
+                            <div className="lg:hidden">
+                                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="text-slate-600 hover:text-indigo-600 focus:outline-none">
+                                    <span className="sr-only">Open main menu</span>
+                                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        {isMenuOpen ? (<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />) : (<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />)}
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {isMenuOpen && (
+                    <div className="lg:hidden" id="mobile-menu">
+                        <div className="space-y-1 px-2 pt-2 pb-3">
+                            <a href="#" className="text-slate-600 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium" onClick={navigate('home')}>Home</a>
+                            <a href="#" className="text-slate-600 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium" onClick={navigate('all-products')}>All Products</a>
+                            <a href="#" className="text-slate-600 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium" onClick={navigate('blog')}>Blog</a>
+                            <div className="border-t border-slate-200 pt-2"><p className="px-3 py-2 text-sm font-semibold text-slate-500">Categories</p>{categories.map(cat => (<a key={cat.id} href="#" onClick={navigate('category', cat)} className="block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-indigo-600">{cat.name}</a>))}{categories.length === 0 && <span className="block px-3 py-2 text-sm text-slate-500">No categories</span>}</div>
+                            <div className="border-t border-slate-200 pt-2">{user && !user.isAnonymous ? (<><a href="#" className="text-slate-600 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium" onClick={navigate('dashboard')}>Dashboard</a><button onClick={handleLogout} className="text-left w-full text-slate-600 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium">Logout</button></>) : (<a href="#" className="text-slate-600 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium" onClick={navigate('login')}>Login</a>)}<a href="#" className="text-slate-600 hover:text-indigo-600 block px-3 py-2 rounded-md text-base font-medium">About</a></div>
+                        </div>
+                    </div>
+                )}
+            </header>
+            
+            <main className="flex-grow">
+                {children}
+            </main>
+
+            {page.name !== 'dashboard' && (
+                <footer className="bg-white mt-16 border-t border-slate-200">
+                    <div className="container mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+                        <div className="md:col-span-1">
+                             <div className="text-2xl font-bold text-slate-800 mb-2 inline-flex items-center">
+                                <img src="vignettelogo.jpeg" alt="Vignette Logo" className="h-8 w-8 mr-2 rounded-full object-cover" />
+                                <div>
+                                    <span className="text-indigo-600">Vignette</span>
+                                </div>
+                            </div>
+                            <p className="text-slate-600 mb-4">Your trusted source for honest, in-depth product reviews.</p>
+                            <p className="text-sm text-slate-500">&copy; {new Date().getFullYear()} Vignette. All rights reserved.</p>
+                        </div>
+                        <div className="md:col-span-2 flex justify-center md:justify-end">
+                            <NewsletterSignup />
+                        </div>
+                    </div>
+                    <div className="border-t border-slate-200 mt-8">
+                        <div className="container mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center text-sm text-slate-500">
+                            <p className="mb-2 sm:mb-0">As an Amazon Associate, we earn from qualifying purchases.</p>
+                            <div className="flex space-x-4">
+                                <a href="#" className="hover:text-slate-900">Privacy Policy</a>
+                                <a href="#" className="hover:text-slate-900">Disclosure</a>
+                                <a href="#" className="hover:text-slate-900">Contact</a>
+                            </div>
+                        </div>
+                    </div>
+                </footer>
+            )}
+        </div>
+    );
+};
+
+
+export default function App() {
+    const [page, setPage] = useState({ name: 'home', context: null });
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [allProducts, setAllProducts] = useState([]);
+    const [publicProducts, setPublicProducts] = useState([]); 
+    const [featuredProducts, setFeaturedProducts] = useState([]);
+    const [allArticles, setAllArticles] = useState([]);
+    const [publicArticles, setPublicArticles] = useState([]);
+    const [featuredArticles, setFeaturedArticles] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [tags, setTags] = useState([]);
+    const [clicks, setClicks] = useState([]);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [authAttempted, setAuthAttempted] = useState(false);
+
+    // Handles authentication state from Firebase.
+    useEffect(() => {
+        // This listener is the single source of truth for the user's authentication state.
+        // It fires once on initial load (after checking for a persisted session) and anytime the user signs in or out.
+        const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+            // Mark that the initial check from Firebase is complete.
+            setAuthAttempted(true);
         });
 
-        // Newsletter form handling
-        const newsletterForm = document.getElementById('newsletter-form');
-        const emailInput = document.getElementById('email-input');
-        const successMessage = document.getElementById('success-message');
+        // Cleanup the subscription when the component unmounts.
+        return () => unsubAuth();
+    }, []);
 
-        newsletterForm.addEventListener('submit', (e) => {
-            e.preventDefault(); // Prevents the form from actually submitting
-            
-            // In a real application, you would send the email to a service 
-            // like Mailchimp, ConvertKit, etc. here.
-            console.log(`Email submitted: ${emailInput.value}`);
-            
-            // Show a success message to the user
-            successMessage.classList.remove('hidden');
-            emailInput.value = ''; // Clear the input field
+    // Handles the creation of a user session if none exists after the initial check.
+    useEffect(() => {
+        // This logic runs only after the initial onAuthStateChanged check has completed.
+        if (authAttempted && !user) {
+            const performInitialSignIn = async () => {
+                try {
+                    // Use the custom token if provided by the environment, otherwise sign in anonymously.
+                    // This prevents a race condition where an anonymous user is created before an existing session is restored.
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    // After a successful sign-in, the onAuthStateChanged listener above will fire again with the new user.
+                } catch (error) {
+                    console.error("Initial sign-in failed:", error);
+                }
+            };
+            performInitialSignIn();
+        }
+    }, [authAttempted, user]);
 
-            // Optional: Hide the message after a few seconds
-            setTimeout(() => {
-                successMessage.classList.add('hidden');
-            }, 5000);
-        });
-    </script>
-</body>
-</html>
+    // Handles the loading state.
+    useEffect(() => {
+        // Once the initial auth check is attempted, we can hide the loading screen.
+        if (authAttempted) {
+            setLoading(false);
+        }
+    }, [authAttempted]);
+    
+    // Handles redirecting a logged-in admin from the login page.
+    useEffect(() => {
+        if (user && !user.isAnonymous && page.name === 'login') {
+            setPage({ name: 'dashboard', context: null });
+        }
+    }, [user, page.name]);
+
+
+    // Handles data fetching based on user state
+    useEffect(() => {
+        if (!user) return;
+
+        const unsubProducts = onSnapshot(query(collection(db, `/artifacts/${appId}/public/data/products`), orderBy("createdAt", "desc")), (snapshot) => { const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })); setAllProducts(data); const published = data.filter(p => !p.isDraft); setPublicProducts(published); setFeaturedProducts(published.filter(p => p.isFeatured)); });
+        const unsubArticles = onSnapshot(query(collection(db, `/artifacts/${appId}/public/data/articles`), orderBy("createdAt", "desc")), (snapshot) => { const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })); setAllArticles(data); const published = data.filter(a => !a.isDraft); setPublicArticles(published); setFeaturedArticles(published.filter(a => a.isFeatured)); });
+        const unsubCategories = onSnapshot(query(collection(db, `/artifacts/${appId}/public/data/categories`), orderBy('name')), (snapshot) => setCategories(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))));
+        const unsubTags = onSnapshot(query(collection(db, `/artifacts/${appId}/public/data/tags`), orderBy('name')), (snapshot) => setTags(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))));
+        const unsubClicks = onSnapshot(query(collection(db, `/artifacts/${appId}/public/data/clicks`), orderBy('clickedAt', 'desc')), (snapshot) => setClicks(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }))));
+        
+        return () => { 
+            unsubProducts(); 
+            unsubArticles(); 
+            unsubCategories(); 
+            unsubTags(); 
+            unsubClicks(); 
+        };
+    }, [user]);
+
+    const handleLogout = async () => { 
+        await signOut(auth); 
+        setPage({ name: 'home' }); 
+        setIsMenuOpen(false);
+    };
+    const navigate = (pageName, context = null) => (e) => { 
+        e.preventDefault(); 
+        setPage({ name: pageName, context }); 
+        setIsMenuOpen(false);
+        window.scrollTo(0,0); 
+    };
+
+    const renderPage = () => {
+        switch (page.name) {
+            case 'login': return <LoginPage />;
+            case 'dashboard': return (user && !user.isAnonymous) ? <AdminDashboard allProducts={allProducts} allArticles={allArticles} categories={categories} tags={tags} clicks={clicks} /> : <LoginPage />;
+            case 'all-products': return <AllProductsPage products={publicProducts} />;
+            case 'category': const categoryProducts = publicProducts.filter(p => p.categoryId === page.context.id); return <AllProductsPage products={categoryProducts} title={`Category: ${page.context.name}`} />;
+            case 'blog': return <BlogPage articles={publicArticles} navigate={navigate} />;
+            case 'article': return <ArticlePage article={page.context} />;
+            case 'home': default: return <HomePage featuredProducts={featuredProducts} featuredArticles={featuredArticles} />;
+        }
+    };
+    
+    if (loading) return <div className="flex items-center justify-center min-h-screen text-slate-500">Loading...</div>;
+
+    const fullPageLayout = ['login'];
+
+    if (fullPageLayout.includes(page.name)) {
+        return (
+             <>
+                 <style>{`
+                     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+                     body { font-family: 'Inter', sans-serif; }
+                 `}</style>
+                 {renderPage()}
+             </>
+        )
+    }
+
+    return (
+        <SiteLayout
+            page={page}
+            user={user}
+            categories={categories}
+            navigate={navigate}
+            handleLogout={handleLogout}
+            isMenuOpen={isMenuOpen}
+            setIsMenuOpen={setIsMenuOpen}
+        >
+             <style>{`
+                 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+                 body { font-family: 'Inter', sans-serif; }
+                 .prose { --tw-prose-body: #334155; --tw-prose-headings: #1e293b; }
+                 @keyframes fade-in-scale {
+                     from { transform: scale(0.95); opacity: 0; }
+                     to { transform: scale(1); opacity: 1; }
+                 }
+                 .animate-fade-in-scale { animation: fade-in-scale 0.2s ease-out forwards; }
+             `}</style>
+            {renderPage()}
+        </SiteLayout>
+    );
+}
 
