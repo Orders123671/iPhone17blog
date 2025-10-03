@@ -36,13 +36,13 @@ import {
 
 // --- Firebase Configuration & Initialization ---
 const defaultPlaceholderConfig = {
-  apiKey: import.meta.env.VITE_API_KEY,
-  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_PROJECT_ID, // Corrected casing
-  storageBucket: import.meta.env.VITE_STORAGE_BUCKET, // Corrected casing
-  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID, // Corrected casing
-  appId: import.meta.env.VITE_APP_ID,
-  measurementId: import.meta.env.VITE_MEASUREMENT_ID
+    apiKey: import.meta.env.VITE_API_KEY,
+    authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_APP_ID,
+    measurementId: import.meta.env.VITE_MEASUREMENT_ID
 };
 
 const finalFirebaseConfig = typeof __firebase_config !== 'undefined'
@@ -80,7 +80,9 @@ const Icons = {
     box: "M2.25 7.125A2.25 2.25 0 014.5 4.875h15A2.25 2.25 0 0121.75 7.125v1.518a2.25 2.25 0 01-1.282 2.053l-2.872.957-2.872.957a2.25 2.25 0 01-2.434 0l-2.872-.957-2.872-.957A2.25 2.25 0 012.25 8.643V7.125zM12 15.638l2.872.957a2.25 2.25 0 002.434 0l2.872-.957a2.25 2.25 0 001.282-2.053v-1.518A2.25 2.25 0 0019.5 7.125h-15a2.25 2.25 0 00-2.25 2.25v1.518c0 .939.524 1.76 1.282 2.053l2.872.957 2.872.957a2.25 2.25 0 002.434 0zM12 21.375l2.872.957a2.25 2.25 0 002.434 0l2.872-.957a2.25 2.25 0 001.282-2.053v-1.518a2.25 2.25 0 00-2.25-2.25h-15a2.25 2.25 0 00-2.25 2.25v1.518c0 .939.524 1.76 1.282 2.053l2.872.957 2.872.957a2.25 2.25 0 002.434 0z",
     book: "M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6-2.292m0 0v14.25",
     cursor: "M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zm0 0l-3.182 3.182a1.5 1.5 0 01-2.121 0l-3.182-3.182a1.5 1.5 0 010-2.121l3.182-3.182a1.5 1.5 0 012.121 0l3.182 3.182a1.5 1.5 0 010 2.121z",
-    tag: "M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3zM11.25 10.875a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z"
+    tag: "M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3zM11.25 10.875a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z",
+    facebook: "M13.021 21v-8.155h2.809l.42-3.265h-3.23V7.519c0-.944.262-1.587 1.616-1.587l1.726-.001V3.129C16.038 3.09 15.01 3 13.842 3c-2.43 0-4.095 1.484-4.095 4.211v2.409H6.94v3.265h2.807V21h3.274z",
+    tiktok: "M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.82-.33-4.15-.83-1.33-.5-2.54-1.17-3.61-2.01V16.7c.01 1.29-.32 2.56-1.01 3.65a5.55 5.55 0 01-4.14 2.87c-1.74.32-3.48.33-5.23.01v-4.04c1.1.25 2.22.41 3.35.46.99.04 1.97-.1 2.91-.38.99-.29 1.91-.78 2.75-1.42V5.41c-.73-.42-1.55-.69-2.4-.77-1.33-.12-2.65-.01-3.98.17V.02z"
 };
 
 // --- Helper Components & Hooks ---
@@ -168,7 +170,7 @@ const handleAffiliateClick = async (product) => {
 
 // Enhanced Product Card component
 const ProductCard = ({ product }) => (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group">
+    <div className="bg-gradient-to-br from-white to-slate-50/50 border border-slate-200 rounded-xl shadow-sm transition-all duration-300 flex flex-col overflow-hidden group hover:-translate-y-1 hover:shadow-xl hover:ring-2 hover:ring-indigo-300">
         <div className="relative">
             <img
                 src={product.imageUrl}
@@ -190,7 +192,7 @@ const ProductCard = ({ product }) => (
             </div>
             <button
                 onClick={() => handleAffiliateClick(product)}
-                className="w-full text-center bg-amber-400 hover:bg-amber-500 text-slate-800 font-bold py-2.5 px-4 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md"
+                className="w-full text-center bg-gradient-to-br from-amber-400 to-amber-500 text-slate-800 font-bold py-2.5 px-4 rounded-lg transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-0.5"
             >
                 Check Price
             </button>
@@ -200,7 +202,7 @@ const ProductCard = ({ product }) => (
 
 // Enhanced Article Card component
 const ArticleCard = ({ article, navigate }) => (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden cursor-pointer group" onClick={navigate('article', article)}>
+    <div className="bg-gradient-to-br from-white to-slate-50/50 border border-slate-200 rounded-xl shadow-sm transition-all duration-300 flex flex-col overflow-hidden cursor-pointer group hover:-translate-y-1 hover:shadow-xl hover:ring-2 hover:ring-indigo-300" onClick={navigate('article', article)}>
         <div className="overflow-hidden">
             <img
                 src={article.imageUrl}
@@ -274,7 +276,7 @@ const ComparisonTable = ({ products }) => {
                             <td key={p.id} className="p-3 text-center border-l border-slate-200">
                                 <button
                                     onClick={() => handleAffiliateClick(p)}
-                                    className="w-full text-center bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-all duration-300 shadow-md"
+                                    className="w-full text-center bg-gradient-to-br from-indigo-600 to-indigo-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5"
                                 >
                                     Buy Now
                                 </button>
@@ -434,27 +436,27 @@ const HomePage = ({ featuredProducts, featuredArticles, publicProducts }) => {
     useSeo(pageTitle, pageDesc);
 
     return (
-        <main className="container mx-auto px-6 py-12">
+        <main className="container mx-auto px-6 py-12 animate-fade-in-slide-up">
             {/* Centered main content area */}
             <div className="max-w-4xl mx-auto">
                 {featuredArticle ? (
                     <article className="mb-16">
-                       <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 mb-4 tracking-tight text-center">{featuredArticle.title}</h1>
+                       <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight text-center">{featuredArticle.title}</h1>
                         <p className="text-slate-500 mb-8 text-center">Published on {new Date(featuredArticle.createdAt?.toDate()).toLocaleDateString()}</p>
                         <img src={featuredArticle.imageUrl} alt={featuredArticle.title} className="w-full h-auto rounded-lg shadow-lg mb-8" />
                         <ArticleContentRenderer content={featuredArticle.content} products={publicProducts} />
                     </article>
                 ) : (
                     <section className="text-center py-16 sm:py-20 mb-16">
-                        <h1 className="text-4xl md:text-6xl font-extrabold text-slate-800 mb-4 tracking-tighter">Your Ultimate Guide to the Best</h1>
-                        <p className="text-lg text-slate-600 max-w-3xl mx-auto">We research and review products so you can make confident buying decisions. We only recommend what we love.</p>
+                        <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 mb-4 tracking-tight">Your Ultimate Guide to the Best</h1>
+                        <p className="text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed">We research and review products so you can make confident buying decisions. We only recommend what we love.</p>
                     </section>
                 )}
             </div>
 
             {/* Product recommendations underneath the main content */}
             <section>
-                <h2 className="text-3xl font-bold text-slate-800 mb-8 border-l-4 border-indigo-500 pl-4">Top Recommendations</h2>
+                <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-8 border-l-4 border-indigo-500 pl-4">Top Recommendations</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {featuredProducts.slice(0, 5).map(product => (<ProductCard key={product.id} product={product} />))}
                     {featuredProducts.length === 0 && <p className="text-slate-500">No recommended products available.</p>}
@@ -503,8 +505,8 @@ const AllProductsPage = ({ products, title = "All Products" }) => {
     useSeo(`${title} - Vignette`, `Browse and filter through all our recommended products in the ${title} category.`);
 
     return (
-        <main className="container mx-auto px-6 py-12">
-            <h1 className="text-4xl font-extrabold text-slate-800 mb-8 tracking-tight">{title}</h1>
+        <main className="container mx-auto px-6 py-12 animate-fade-in-slide-up">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-8 tracking-tight">{title}</h1>
             <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-8 flex flex-col md:flex-row gap-4 items-center">
                 <div className="w-full md:w-2/3">
                     <input type="text" placeholder="Search by name, description, or tag..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full p-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition" />
@@ -529,8 +531,8 @@ const AllProductsPage = ({ products, title = "All Products" }) => {
 const BlogPage = ({ articles, navigate }) => {
     useSeo('Blog - Vignette', 'Read our latest articles, reviews, and guides to find the best products.');
     return (
-        <main className="container mx-auto px-6 py-12">
-            <h1 className="text-4xl font-extrabold text-slate-800 mb-8 tracking-tight">Our Latest Articles</h1>
+        <main className="container mx-auto px-6 py-12 animate-fade-in-slide-up">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-8 tracking-tight">Our Latest Articles</h1>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {articles.map(article => <ArticleCard key={article.id} article={article} navigate={navigate} />)}
                 {articles.length === 0 && <p className="text-slate-500 col-span-full text-center py-10">No articles published yet.</p>}
@@ -576,7 +578,7 @@ const CommentsSection = ({ itemId }) => {
 
     return (
         <section className="mt-16">
-            <h2 className="text-3xl font-bold text-slate-800 mb-8">Comments ({comments.length})</h2>
+            <h2 className="text-3xl font-bold text-slate-900 tracking-tight mb-8">Comments ({comments.length})</h2>
             <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 mb-8">
                 <h3 className="text-xl font-bold mb-4">Leave a Reply</h3>
                 <form onSubmit={handleSubmitComment} className="space-y-4">
@@ -585,7 +587,7 @@ const CommentsSection = ({ itemId }) => {
                         <div className="flex items-center space-x-2"><span className="font-medium text-slate-700">Your Rating:</span> <StarRating rating={rating} setRating={setRating} /></div>
                     </div>
                     <textarea placeholder="Your Comment" value={text} onChange={e => setText(e.target.value)} className="w-full p-2 border border-slate-300 rounded-lg" rows="4" required />
-                    <button type="submit" className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 transition-colors">Submit</button>
+                    <button type="submit" className="px-6 py-2 bg-gradient-to-br from-indigo-600 to-indigo-700 text-white font-bold rounded-lg hover:bg-indigo-700 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg">Submit</button>
                     {message && <p className="mt-2 text-sm">{message}</p>}
                 </form>
             </div>
@@ -597,7 +599,7 @@ const CommentsSection = ({ itemId }) => {
                             <StarRating rating={comment.rating} />
                         </div>
                         <p className="text-slate-500 text-sm mb-3">{new Date(comment.createdAt?.toDate()).toLocaleString()}</p>
-                        <p className="text-slate-700">{comment.text}</p>
+                        <p className="text-slate-700 leading-relaxed">{comment.text}</p>
                     </div>
                 ))}
                 {comments.length === 0 && <p className="text-slate-500 text-center py-6">No comments yet. Be the first to reply!</p>}
@@ -610,8 +612,8 @@ const ArticlePage = ({ article, publicProducts }) => {
     if (!article) return <div className="container mx-auto px-6 py-12 text-center text-slate-500">Article not found.</div>;
     useSeo(article.metaTitle || article.title, article.metaDescription || '');
     return (
-        <main className="container mx-auto px-6 py-12 max-w-4xl">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 mb-4 tracking-tight">{article.title}</h1>
+        <main className="container mx-auto px-6 py-12 max-w-4xl animate-fade-in-slide-up">
+            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">{article.title}</h1>
             <p className="text-slate-500 mb-8">Published on {new Date(article.createdAt?.toDate()).toLocaleDateString()}</p>
             <img src={article.imageUrl} alt={article.title} className="w-full h-auto rounded-xl shadow-lg mb-8" />
 
@@ -647,6 +649,14 @@ const LoginPage = () => {
     return (
         <div className="flex items-center justify-center min-h-screen bg-slate-100">
             <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-xl shadow-lg border border-slate-200">
+                <div className="flex justify-center items-center mb-6">
+                    <a href="#" onClick={(e) => e.preventDefault()} className="text-2xl font-bold text-slate-800 flex items-center">
+                        <img src="vignettelogo.jpeg" alt="Vignette Logo" className="h-8 w-8 mr-2 rounded-full object-cover" />
+                        <div>
+                            <span className="text-indigo-600">Vignette</span>
+                        </div>
+                    </a>
+                </div>
                 <h2 className="text-2xl font-bold text-center text-slate-800">Admin Login</h2>
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div>
@@ -1050,7 +1060,7 @@ const NewsletterSignup = () => {
             <p className="text-slate-600 mb-4">Get the latest product reviews and guides straight to your inbox.</p>
             <form onSubmit={handleSignup} className="flex flex-col sm:flex-row gap-2">
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Enter your email" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" required />
-                <button type="submit" disabled={isSubscribing} className="bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center disabled:bg-indigo-400">
+                <button type="submit" disabled={isSubscribing} className="bg-gradient-to-br from-indigo-600 to-indigo-700 text-white font-bold py-2 px-6 rounded-lg hover:bg-indigo-700 transition-all duration-300 flex items-center justify-center disabled:bg-indigo-400 hover:-translate-y-0.5 hover:shadow-lg">
                     {isSubscribing ? <Spinner /> : 'Subscribe'}
                 </button>
             </form>
@@ -1092,7 +1102,7 @@ const SiteLayout = ({ children, page, user, categories, navigate, handleLogout, 
                             <div className="hidden lg:flex lg:items-center lg:space-x-6 font-medium">
                                 <a href="#" className="text-slate-600 hover:text-indigo-600 transition-colors" onClick={navigate('home')}>Home</a>
                                 <a href="#" className="text-slate-600 hover:text-indigo-600 transition-colors" onClick={navigate('all-products')}>All Products</a>
-                                <a href="#" className="text-slate-600 hover:text-indigo-600 transition-colors" onClick={navigate('blog')}>All Articles and reviews</a>
+                                <a href="#" className="text-slate-600 hover:text-indigo-600 transition-colors" onClick={navigate('blog')}>All Articles</a>
                                 <div className="relative group">
                                     <button className="text-slate-600 hover:text-indigo-600 transition-colors">Categories</button>
                                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 hidden group-hover:block ring-1 ring-slate-900/5">
@@ -1142,7 +1152,14 @@ const SiteLayout = ({ children, page, user, categories, navigate, handleLogout, 
                                 </div>
                             </div>
                             <p className="text-slate-600 mb-4">Your trusted source for honest, in-depth product reviews.</p>
-                            <p className="text-sm text-slate-500">&copy; {new Date().getFullYear()} Vignette. All rights reserved.</p>
+                             <div className="flex justify-center md:justify-start space-x-4 mt-4">
+                                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-indigo-600 transition-colors">
+                                    <Icon path={Icons.facebook} className="w-6 h-6" />
+                                </a>
+                                <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-indigo-600 transition-colors">
+                                    <Icon path={Icons.tiktok} className="w-6 h-6" />
+                                </a>
+                            </div>
                         </div>
                         <div className="md:col-span-2 flex justify-center md:justify-end">
                             <NewsletterSignup />
@@ -1150,7 +1167,7 @@ const SiteLayout = ({ children, page, user, categories, navigate, handleLogout, 
                     </div>
                     <div className="border-t border-slate-200 mt-8">
                         <div className="container mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center text-sm text-slate-500">
-                            <p className="mb-2 sm:mb-0">Vignette 2025</p>
+                            <p className="mb-2 sm:mb-0"></p>
                             <div className="flex space-x-4">
                                 <a href="#" className="hover:text-slate-900">Privacy Policy</a>
                                 <a href="#" className="hover:text-slate-900">Disclosure</a>
@@ -1179,6 +1196,26 @@ export default function App() {
     const [tags, setTags] = useState([]);
     const [clicks, setClicks] = useState([]);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    // Handles auto-logout for admin on tab/window close
+    useEffect(() => {
+        const handleSignOutOnClose = () => {
+            // Check if the current user is a logged-in admin before signing out
+            const user = auth.currentUser;
+            if (user && !user.isAnonymous) {
+                // This is a synchronous call to initiate sign out
+                signOut(auth);
+            }
+        };
+
+        // Add the event listener when the component mounts
+        window.addEventListener('beforeunload', handleSignOutOnClose);
+
+        // Return a cleanup function to remove the listener when the component unmounts
+        return () => {
+            window.removeEventListener('beforeunload', handleSignOutOnClose);
+        };
+    }, []); // Empty dependency array ensures this runs only once.
 
     // Handles authentication state
     useEffect(() => {
@@ -1362,8 +1399,17 @@ export default function App() {
                     to { transform: scale(1); opacity: 1; }
                 }
                 .animate-fade-in-scale { animation: fade-in-scale 0.2s ease-out forwards; }
+
+                @keyframes fadeInSlideUp {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in-slide-up {
+                    animation: fadeInSlideUp 0.5s ease-out forwards;
+                }
             `}</style>
             {renderPage()}
         </SiteLayout>
     );
 }
+
